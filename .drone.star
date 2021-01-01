@@ -678,6 +678,11 @@ def acceptance():
 								copyFilesForUpload() +
 								runWebuiAcceptanceTests(suite, alternateSuiteName, params['filterTags'], params['extraEnvironment'], browser) +
 								(
+									uploadVisualDiff() +
+									buildGithubComment(suiteName, alternateSuiteName) +
+									githubComment()
+								 if "visual" in suiteName.lower() else []) +
+								(
 									uploadScreenshots() +
 									buildGithubComment(suiteName, alternateSuiteName) +
 									githubComment()
@@ -1658,6 +1663,38 @@ def uploadScreenshots():
 			'endpoint': 'https://minio.owncloud.com/',
 			'path_style': True,
 			'source': '/var/www/owncloud/web/tests/reports/screenshots/**/*',
+			'strip_prefix': '/var/www/owncloud/web/tests/reports/screenshots',
+			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
+		},
+		'environment': {
+			'AWS_ACCESS_KEY_ID': {
+				'from_secret': 'aws_access_key_id'
+			},
+			'AWS_SECRET_ACCESS_KEY': {
+				'from_secret': 'aws_secret_access_key'
+			},
+		},
+		'when': {
+			'status': [
+				'failure'
+			],
+			'event': [
+				'pull_request'
+			]
+		},
+	}]
+
+def uploadVisualDiff():
+	return [{
+		'name': 'upload-screenshots',
+		'image': 'plugins/s3',
+		'pull': 'if-not-exists',
+		'settings': {
+			'acl': 'public-read',
+			'bucket': 'web',
+			'endpoint': 'https://minio.owncloud.com/',
+			'path_style': True,
+			'source': '/var/www/owncloud/web/tests/vrt/diff/**/*',
 			'strip_prefix': '/var/www/owncloud/web/tests/reports/screenshots',
 			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
 		},
