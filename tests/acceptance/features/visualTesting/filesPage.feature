@@ -11,3 +11,4 @@ Feature: User can view different parts of the files page
   Scenario: Top bar for files page should match the baseline
     When the user browses to the files page
     Then the top bar should match the default baseline
+    And the sidebar should match the default baseline

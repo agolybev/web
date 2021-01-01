@@ -85,6 +85,7 @@ config = {
 				'webUITrashbinFilesFolders': 'TrashbinFilesFolders',
 				'webUITrashbinRestore': 'TrashbinRestore',
 				'webUIUpload': 'Upload',
+				'visualTesting': 'Visual',
 			},
 			'extraEnvironment': {
 				'OPENID_LOGIN': 'true',
@@ -314,6 +315,7 @@ config = {
 				'webUISharingFolderPermissionMultipleUsers': 'OCISSharingFolderPermissionMultipleUsers',
 				'webUISharingFolderAdvancedPermissionMultipleUsers': 'OCISSharingFolderAdvancedPermissionMU',
 				'webUIMoveFilesFolders': 'OCISMove',
+				'visualTesting': 'OCISVisual',
 			},
 			'extraEnvironment': {
 				'NODE_TLS_REJECT_UNAUTHORIZED': '0',

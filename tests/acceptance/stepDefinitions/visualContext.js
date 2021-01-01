@@ -9,7 +9,8 @@ const backends = Object.freeze({
 })
 
 const visualElements = Object.freeze({
-  topBar: '#oc-topbar'
+  topBar: '#oc-topbar',
+  sideBar: '.oc-app-navigation'
 })
 
 const getImgPath = function(key) {
@@ -32,4 +33,7 @@ const assertScreenShot = async function(key) {
 
 Then('the top bar should match the default baseline', function() {
   return assertScreenShot('topBar')
+})
+Then('the sidebar should match the default baseline', function() {
+  return assertScreenShot('sideBar')
 })
