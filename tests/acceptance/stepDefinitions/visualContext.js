@@ -1,28 +1,35 @@
 const { Then } = require('cucumber')
 const { client } = require('nightwatch-api')
+const _ = require('lodash')
+const path = require('path')
 
-const visualElements = Object.freeze({
-  ocis: {
-    topBar: {
-      selector: '#oc-topbar',
-      path: 'ocis/topBar'
-    }
-  },
-  oc10: {
-    topBar: {
-      selector: '#oc-topbar',
-      path: 'oc10/topBar'
-    }
-  }
+const backends = Object.freeze({
+  OCIS: 'ocis',
+  OC10: 'oc10'
 })
 
-Then('the top bar should match the default baseline', async function() {
-  const backend = client.globals.ocis ? 'ocis' : 'oc10'
-  const element = visualElements[backend].topBar
+const visualElements = Object.freeze({
+  topBar: '#oc-topbar'
+})
+
+const getImgPath = function(key) {
+  const backend = client.globals.ocis ? backends.OCIS : backends.OC10
+  if (_.has(visualElements, key)) {
+    return path.join(backend, key)
+  }
+  throw new Error(`Cannot find the element ${key}`)
+}
+
+const assertScreenShot = async function(key) {
+  const imgPath = getImgPath(key)
+  const element = visualElements[key]
   await client.assert.screenshotIdenticalToBaseline(
-    element.selector,
-    element.path,
-    { threshold: 0 },
+    element,
+    imgPath,
     'Matched the top bar of files page'
   )
+}
+
+Then('the top bar should match the default baseline', function() {
+  return assertScreenShot('topBar')
 })
