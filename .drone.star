@@ -678,8 +678,10 @@ def acceptance():
 								copyFilesForUpload() +
 								runWebuiAcceptanceTests(suite, alternateSuiteName, params['filterTags'], params['extraEnvironment'], browser) +
 								(
+									listScreenShots() +
 									uploadVisualDiff() +
-									buildGithubComment(suiteName, alternateSuiteName) +
+									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff/ocis', 'ocis') +
+									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff/oc10', 'oc10') +
 									githubComment()
 								 if "visual" in suiteName.lower() else []) +
 								(
@@ -1684,6 +1686,23 @@ def uploadScreenshots():
 		},
 	}]
 
+def listScreenShots():
+	return [{
+		'name': 'list screenshots-visual',
+		'image': 'owncloudci/nodejs:12',
+		'pull': 'always',
+		'commands': [
+			'ls -la /var/www/owncloud/web/tests/vrt/diff',
+			'ls -la /var/www/owncloud/web/tests/vrt/diff/ocis',
+			'ls -la /var/www/owncloud/web/tests/vrt/diff/oc10',
+		],
+		'when': {
+			'status': [
+				'failure'
+			],
+		}
+	}]
+
 def uploadVisualDiff():
 	return [{
 		'name': 'upload-screenshots',
@@ -1695,7 +1714,7 @@ def uploadVisualDiff():
 			'endpoint': 'https://minio.owncloud.com/',
 			'path_style': True,
 			'source': '/var/www/owncloud/web/tests/vrt/diff/**/*',
-			'strip_prefix': '/var/www/owncloud/web/tests/reports/screenshots',
+			'strip_prefix': '/var/www/owncloud/web/tests/vrt/diff',
 			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
 		},
 		'environment': {
@@ -1716,13 +1735,13 @@ def uploadVisualDiff():
 		},
 	}]
 
-def buildGithubComment(suite, alternateSuiteName):
+def buildGithubComment(suite, alternateSuiteName, baseDir='/var/www/owncloud/web/tests/reports/screenshots/', nameSuffix=''):
 	return [{
-		'name': 'build-github-comment',
+		'name': 'build-github-comment' + ('' if not nameSuffix else '-%s' % nameSuffix),
 		'image': 'owncloud/ubuntu:16.04',
 		'pull': 'always',
 		'commands': [
-			'cd /var/www/owncloud/web/tests/reports/screenshots/',
+			'cd %s' % baseDir,
 			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> comments.file' % alternateSuiteName,
 			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/web/screenshots/${DRONE_BUILD_NUMBER}/$f)" >> comments.file; done',
 			'echo "\n</p></details>" >> comments.file',
