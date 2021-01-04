@@ -1714,14 +1714,12 @@ def uploadVisualDiff():
 			'source': '/var/www/owncloud/web/tests/vrt/diff/**/*',
 			'strip_prefix': '/var/www/owncloud/web/tests/vrt/diff',
 			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
-		},
-		'environment': {
-			'AWS_ACCESS_KEY_ID': {
-				'from_secret': 'aws_access_key_id'
+			'access_key': {
+				'from_secret': 'AWS_ACCESS_KEY_ID'
 			},
-			'AWS_SECRET_ACCESS_KEY': {
-				'from_secret': 'aws_secret_access_key'
-			},
+			'secret_key': {
+				'from_secret': 'AWS_SECRET_ACCESS_KEY'
+			}
 		},
 		'when': {
 			'status': [
@@ -1741,7 +1739,7 @@ def buildGithubComment(suite, alternateSuiteName, baseDir='/var/www/owncloud/web
 		'commands': [
 			'cd %s' % baseDir,
 			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> comments.file' % alternateSuiteName,
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/web/screenshots/${DRONE_BUILD_NUMBER}/$f)" >> comments.file; done',
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/web/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> comments.file; done' % nameSuffix,
 			'echo "\n</p></details>" >> comments.file',
 			'more comments.file',
 		],
