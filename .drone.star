@@ -680,8 +680,7 @@ def acceptance():
 								(
 									listScreenShots() +
 									uploadVisualDiff() +
-									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff', 'ocis') +
-									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff', 'oc10') +
+									buildGithubCommentVisualDiff(suiteName, alternateSuiteName, params['runningOnOCIS']) +
 									githubComment()
 								 if "visual" in suiteName.lower() else []) +
 								(
@@ -1731,16 +1730,49 @@ def uploadVisualDiff():
 		},
 	}]
 
-def buildGithubComment(suite, alternateSuiteName, baseDir='/var/www/owncloud/web/tests/reports/screenshots/', nameSuffix=''):
+def buildGithubCommentVisualDiff(suite, alternateSuiteName, runningOnOCIS):
+	backend = 'ocis' if runningOnOCIS else 'oc10'
 	return [{
-		'name': 'build-github-comment' + ('' if not nameSuffix else '-%s' % nameSuffix),
+		'name': 'build-github-comment',
 		'image': 'owncloud/ubuntu:16.04',
 		'pull': 'always',
 		'commands': [
-			'cd %s' % baseDir,
-			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> comments.file' % alternateSuiteName,
-			'for f in %s/*.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> comments.file; done' % (nameSuffix, nameSuffix),
+			'cd /var/www/owncloud/web/tests/vrt/diff',
+			'cd %s' % backend,
+			'ls -la',
+			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> /var/www/owncloud/web/comments.file' % alternateSuiteName,
+			'echo "Actual Image: ", /var/www/owncloud/web/comments.file',
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'cd ../../latest',
+			'cd %s' % backend,
+			'echo "Diff Image: ", /var/www/owncloud/web/comments.file',
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
 			'echo "\n</p></details>" >> /var/www/owncloud/web/comments.file',
+			'more /var/www/owncloud/web/comments.file',
+		],
+		'environment': {
+			'TEST_CONTEXT': suite,
+		},
+		'when': {
+			'status': [
+				'failure'
+			],
+			'event': [
+				'pull_request'
+			]
+		},
+	}]
+
+def buildGithubComment(suite, alternateSuiteName):
+	return [{
+		'name': 'build-github-comment',
+		'image': 'owncloud/ubuntu:16.04',
+		'pull': 'always',
+		'commands': [
+			'cd /var/www/owncloud/web/tests/reports/screenshots/',
+			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> comments.file' % alternateSuiteName,
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/$f)" >> comments.file; done',
+			'echo "\n</p></details>" >> comments.file',
 			'more comments.file',
 		],
 		'environment': {
