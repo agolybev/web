@@ -680,8 +680,8 @@ def acceptance():
 								(
 									listScreenShots() +
 									uploadVisualDiff() +
-									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff/ocis', 'ocis') +
-									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff/oc10', 'oc10') +
+									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff', 'ocis') +
+									buildGithubComment(suiteName, alternateSuiteName, '/var/www/owncloud/web/tests/vrt/diff', 'oc10') +
 									githubComment()
 								 if "visual" in suiteName.lower() else []) +
 								(
@@ -1708,7 +1708,7 @@ def uploadVisualDiff():
 		'pull': 'if-not-exists',
 		'settings': {
 			'acl': 'public-read',
-			'bucket': 'web',
+			'bucket': 'phoenix',
 			'endpoint': 'https://minio.owncloud.com/',
 			'path_style': True,
 			'source': '/var/www/owncloud/web/tests/vrt/diff/**/*',
@@ -1739,8 +1739,8 @@ def buildGithubComment(suite, alternateSuiteName, baseDir='/var/www/owncloud/web
 		'commands': [
 			'cd %s' % baseDir,
 			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> comments.file' % alternateSuiteName,
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/web/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> comments.file; done' % nameSuffix,
-			'echo "\n</p></details>" >> comments.file',
+			'for f in %s/*.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> comments.file; done' % (nameSuffix, nameSuffix),
+			'echo "\n</p></details>" >> /var/www/owncloud/web/comments.file',
 			'more comments.file',
 		],
 		'environment': {
@@ -1762,7 +1762,7 @@ def githubComment():
 		'image': 'jmccann/drone-github-comment:1',
 		'pull': 'if-not-exists',
 		'settings': {
-			'message_file': '/var/www/owncloud/web/tests/reports/screenshots/comments.file',
+			'message_file': '/var/www/owncloud/web/comments.file',
 		},
 		'environment': {
 			'PLUGIN_API_KEY': {
