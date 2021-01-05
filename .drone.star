@@ -680,6 +680,7 @@ def acceptance():
 								(
 									listScreenShots() +
 									uploadVisualDiff() +
+									uploadVisualScreenShots() +
 									buildGithubCommentVisualDiff(suiteName, alternateSuiteName, params['runningOnOCIS']) +
 									githubComment()
 								 if "visual" in suiteName.lower() else []) +
@@ -1702,7 +1703,7 @@ def listScreenShots():
 
 def uploadVisualDiff():
 	return [{
-		'name': 'upload-screenshots',
+		'name': 'upload-diff-screenshots',
 		'image': 'plugins/s3',
 		'pull': 'if-not-exists',
 		'settings': {
@@ -1711,7 +1712,37 @@ def uploadVisualDiff():
 			'endpoint': 'https://minio.owncloud.com/',
 			'path_style': True,
 			'source': '/var/www/owncloud/web/tests/vrt/diff/**/*',
-			'strip_prefix': '/var/www/owncloud/web/tests/vrt/diff',
+			'strip_prefix': '/var/www/owncloud/web/tests/vrt',
+			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
+			'access_key': {
+				'from_secret': 'AWS_ACCESS_KEY_ID'
+			},
+			'secret_key': {
+				'from_secret': 'AWS_SECRET_ACCESS_KEY'
+			}
+		},
+		'when': {
+			'status': [
+				'failure'
+			],
+			'event': [
+				'pull_request'
+			]
+		},
+	}]
+
+def uploadVisualScreenShots():
+	return [{
+		'name': 'upload-latest-screenshots',
+		'image': 'plugins/s3',
+		'pull': 'if-not-exists',
+		'settings': {
+			'acl': 'public-read',
+			'bucket': 'phoenix',
+			'endpoint': 'https://minio.owncloud.com/',
+			'path_style': True,
+			'source': '/var/www/owncloud/web/tests/vrt/latest/**/*',
+			'strip_prefix': '/var/www/owncloud/web/tests/vrt',
 			'target': '/screenshots/${DRONE_BUILD_NUMBER}',
 			'access_key': {
 				'from_secret': 'AWS_ACCESS_KEY_ID'
@@ -1741,12 +1772,12 @@ def buildGithubCommentVisualDiff(suite, alternateSuiteName, runningOnOCIS):
 			'cd %s' % backend,
 			'ls -la',
 			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> /var/www/owncloud/web/comments.file' % alternateSuiteName,
-			'echo "Actual Image: ", /var/www/owncloud/web/comments.file',
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'echo "Diff Image: </br>" >> /var/www/owncloud/web/comments.file',
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/diff/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
 			'cd ../../latest',
 			'cd %s' % backend,
-			'echo "Diff Image: ", /var/www/owncloud/web/comments.file',
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'echo "Actual Image: </br>" >> /var/www/owncloud/web/comments.file',
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/latest/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
 			'echo "\n</p></details>" >> /var/www/owncloud/web/comments.file',
 			'more /var/www/owncloud/web/comments.file',
 		],
