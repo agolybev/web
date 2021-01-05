@@ -78,7 +78,7 @@ module.exports = {
           baseline_suffix: '',
           diff_screenshots_path: 'tests/vrt/diff',
           diff_suffix: '',
-          threshold: 0.1,
+          threshold: 0.025,
           prompt: false,
           always_save_diff_screenshot: UPDATE_VRT_SCREENSHOTS
         }
