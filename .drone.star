@@ -354,7 +354,7 @@ def beforePipelines(ctx):
 	return yarnlint() + changelog(ctx) + website(ctx)
 
 def stagePipelines(ctx):
-	acceptancePipelines = acceptance()
+	acceptancePipelines = acceptance(ctx)
 	if acceptancePipelines == False:
 		return unitTests()
 
@@ -565,7 +565,7 @@ def unitTests():
 		},
 	}]
 
-def acceptance():
+def acceptance(ctx):
 	pipelines = []
 
 	if 'acceptance' not in config:
@@ -681,7 +681,7 @@ def acceptance():
 									listScreenShots() +
 									uploadVisualDiff() +
 									uploadVisualScreenShots() +
-									buildGithubCommentVisualDiff(suiteName, alternateSuiteName, params['runningOnOCIS']) +
+									buildGithubCommentVisualDiff(ctx, suiteName, alternateSuiteName, params['runningOnOCIS']) +
 									githubComment()
 								 if "visual" in suiteName.lower() else []) +
 								(
@@ -1761,8 +1761,9 @@ def uploadVisualScreenShots():
 		},
 	}]
 
-def buildGithubCommentVisualDiff(suite, alternateSuiteName, runningOnOCIS):
+def buildGithubCommentVisualDiff(ctx, suite, alternateSuiteName, runningOnOCIS):
 	backend = 'ocis' if runningOnOCIS else 'oc10'
+	branch = ctx.build.source if ctx.build.event == 'pull_request' else 'master'
 	return [{
 		'name': 'build-github-comment',
 		'image': 'owncloud/ubuntu:16.04',
@@ -1773,11 +1774,13 @@ def buildGithubCommentVisualDiff(suite, alternateSuiteName, runningOnOCIS):
 			'ls -la',
 			'echo "<details><summary>:boom: Acceptance tests <strong>%s</strong> failed. Please find the screenshots inside ...</summary>\\n\\n${DRONE_BUILD_LINK}/${DRONE_JOB_NUMBER}\\n\\n<p>\\n\\n" >> /var/www/owncloud/web/comments.file' % alternateSuiteName,
 			'echo "Diff Image: </br>" >> /var/www/owncloud/web/comments.file',
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/diff/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/diff/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
 			'cd ../../latest',
 			'cd %s' % backend,
 			'echo "Actual Image: </br>" >> /var/www/owncloud/web/comments.file',
-			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/latest/${DRONE_BUILD_NUMBER}/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'for f in *.png; do echo \'!\'"[$f](https://minio.owncloud.com/phoenix/screenshots/${DRONE_BUILD_NUMBER}/latest/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % backend,
+			'echo "Comparing Against: </br>" >> /var/www/owncloud/web/comments.file',
+			'for f in *.png; do echo \'!\'"[$f](https://raw.githubusercontent.com/owncloud/web/%s/tests/vrt/baseline/%s/$f)" >> /var/www/owncloud/web/comments.file; done' % (branch, backend),
 			'echo "\n</p></details>" >> /var/www/owncloud/web/comments.file',
 			'more /var/www/owncloud/web/comments.file',
 		],
