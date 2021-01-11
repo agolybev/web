@@ -34,6 +34,7 @@ const OPENID_LOGIN = RUN_ON_OCIS || !!process.env.OPENID_LOGIN
 const WEB_UI_CONFIG = process.env.WEB_UI_CONFIG || path.join(__dirname, 'dist/config.json')
 const SCREENSHOTS = !!process.env.SCREENSHOTS
 
+const VISUAL_TEST = !!process.env.VISUAL_TEST
 const UPDATE_VRT_SCREENSHOTS = !!process.env.UPDATE_VRT_SCREENSHOTS
 
 function generateScreenshotFilePath(nightwatchClient, basePath, imagePath) {
@@ -70,6 +71,7 @@ module.exports = {
         ocis_skeleton_dir: OCIS_SKELETON_DIR,
         ldap_password: LDAP_ADMIN_PASSWORD,
         webUIConfig: WEB_UI_CONFIG,
+        visual_test: VISUAL_TEST,
         visual_regression_settings: {
           generate_screenshot_path: generateScreenshotFilePath,
           latest_screenshots_path: 'tests/vrt/latest',

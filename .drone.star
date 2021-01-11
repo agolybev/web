@@ -85,13 +85,13 @@ config = {
 				'webUITrashbinFilesFolders': 'TrashbinFilesFolders',
 				'webUITrashbinRestore': 'TrashbinRestore',
 				'webUIUpload': 'Upload',
-				'visualTesting': 'Visual',
 			},
 			'extraEnvironment': {
 				'OPENID_LOGIN': 'true',
 				'WEB_UI_CONFIG': '/srv/config/drone/config.json',
 				'EXPECTED_FAILURES_FILE': '/var/www/owncloud/web/tests/acceptance/expected-failures-with-oc10-server.txt'
-			}
+			},
+			'visualTesting': True,
 		},
 		'webUIFederation': {
 			'suites': {
@@ -315,7 +315,6 @@ config = {
 				'webUISharingFolderPermissionMultipleUsers': 'OCISSharingFolderPermissionMultipleUsers',
 				'webUISharingFolderAdvancedPermissionMultipleUsers': 'OCISSharingFolderAdvancedPermissionMU',
 				'webUIMoveFilesFolders': 'OCISMove',
-				'visualTesting': 'OCISVisual',
 			},
 			'extraEnvironment': {
 				'NODE_TLS_REJECT_UNAUTHORIZED': '0',
@@ -328,6 +327,7 @@ config = {
 				'EXPECTED_FAILURES_FILE': '/var/www/owncloud/web/tests/acceptance/expected-failures-with-ocis-server-owncloud-storage.txt'
 			},
 			'runningOnOCIS': True,
+			'visualTesting': True,
 			'filterTags': 'not @skip and not @skipOnOCIS and not @notToImplementOnOCIS',
 		}
 	},
@@ -589,6 +589,7 @@ def acceptance(ctx):
 		'federatedServerVersion': '',
 		'runningOnOCIS': False,
 		'screenShots': False,
+		'visualTesting': False,
 	}
 
 	if 'defaults' in config:
@@ -676,19 +677,19 @@ def acceptance(ctx):
 									)
 								) +
 								copyFilesForUpload() +
-								runWebuiAcceptanceTests(suite, alternateSuiteName, params['filterTags'], params['extraEnvironment'], browser) +
+								runWebuiAcceptanceTests(suite, alternateSuiteName, params['filterTags'], params['extraEnvironment'], browser, params['visualTesting']) +
 								(
 									listScreenShots() +
 									uploadVisualDiff() +
 									uploadVisualScreenShots() +
-									buildGithubCommentVisualDiff(ctx, suiteName, alternateSuiteName, params['runningOnOCIS']) +
-									githubComment()
-								 if "visual" in suiteName.lower() else []) +
+									buildGithubCommentVisualDiff(ctx, suiteName, alternateSuiteName, params['runningOnOCIS'])
+								 if params['visualTesting'] else []) +
 								(
 									uploadScreenshots() +
 									buildGithubComment(suiteName, alternateSuiteName) +
 									githubComment()
-								if isLocalBrowser(browser) and params['screenShots'] else []),
+								if isLocalBrowser(browser) and params['screenShots'] else []) +
+								(githubComment() if (params['visualTesting'] or (isLocalBrowser(browser) and params['screenShots'])) else []),
 							'services':
 								( redisService() if params['runningOnOCIS'] else []) +
 								browserService(alternateSuiteName, browser) +
@@ -1595,7 +1596,7 @@ def copyFilesForUpload():
 		]
 	}]
 
-def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironment, browser):
+def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironment, browser, visualTesting):
 	environment = {}
 	if (filterTags != ''):
 		environment['TEST_TAGS'] = filterTags
@@ -1619,6 +1620,9 @@ def runWebuiAcceptanceTests(suite, alternateSuiteName, filterTags, extraEnvironm
 		environment['SAUCE_ACCESS_KEY'] = {
 			'from_secret': 'sauce_access_key'
 		}
+
+	if (visualTesting):
+		environment['VISUAL_TEST'] = 'true'
 
 	environment['SERVER_HOST'] = 'http://web:9100'
 	environment['BACKEND_HOST'] = 'http://owncloud'
@@ -1765,7 +1769,7 @@ def buildGithubCommentVisualDiff(ctx, suite, alternateSuiteName, runningOnOCIS):
 	backend = 'ocis' if runningOnOCIS else 'oc10'
 	branch = ctx.build.source if ctx.build.event == 'pull_request' else 'master'
 	return [{
-		'name': 'build-github-comment',
+		'name': 'build-github-comment-vrt',
 		'image': 'owncloud/ubuntu:16.04',
 		'pull': 'always',
 		'commands': [

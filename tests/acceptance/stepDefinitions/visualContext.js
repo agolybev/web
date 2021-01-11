@@ -22,6 +22,9 @@ const getImgPath = function(key) {
 }
 
 const assertScreenShot = async function(key) {
+  if (!client.globals.visual_test) {
+    return
+  }
   const imgPath = getImgPath(key)
   const element = visualElements[key]
   await client.assert.screenshotIdenticalToBaseline(
